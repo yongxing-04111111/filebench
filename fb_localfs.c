@@ -265,13 +265,11 @@ aio_deallocate(flowop_t *flowop, struct aiocb64 *aiocb)
 
 	if (match == NULL)
 		return (FILEBENCH_ERROR);
-
 	/* Remove from the list */
 	if (previous)
 		previous->al_next = match->al_next;
 	else
 		flowop->fo_thread->tf_aiolist = match->al_next;
-
 	return (FILEBENCH_OK);
 }
 
@@ -429,6 +427,7 @@ fb_lfsflow_aiowait(threadflow_t *threadflow, flowop_t *flowop)
 
 #else
 
+		aiolist_t *al_prev = NULL;
 		for (ncompleted = 0, inprogress = 0,
 		    aio = flowop->fo_thread->tf_aiolist;
 		    ncompleted < todo && aio != NULL; aio = aio->al_next) {
@@ -453,7 +452,13 @@ fb_lfsflow_aiowait(threadflow_t *threadflow, flowop_t *flowop)
 				flowop_endop(threadflow, flowop, 0);
 				return (FILEBENCH_ERROR);
 			}
+			if (al_prev)
+                                free(al_prev);
+
+			al_prev = aio;
 		}
+		if (al_prev)
+                        free(al_prev);
 
 		uncompleted -= ncompleted;
 
